@@ -463,8 +463,8 @@ const App = () => {
     <div className="page">
       <header className="header">
         <div>
-          <p className="eyebrow">学内データ活用</p>
-          <h1>みんなのGPA</h1>
+          <p className="eyebrow">立命館生向け</p>
+          <h1>みんなのGPA+R</h1>
           <p className="lead">
             学校から提供されたデータ*¹をもとに、学科×学年ごとの GPA
             分布を可視化し、 自分の位置づけを即座に推定します。
