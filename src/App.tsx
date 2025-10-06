@@ -464,7 +464,7 @@ const App = () => {
       <header className="header">
         <div>
           <p className="eyebrow">学内データ活用</p>
-          <h1>GPA</h1>
+          <h1>みんなのGPA</h1>
           <p className="lead">
             学校から提供されたデータをもとに、学科×学年ごとの GPA
             分布を可視化し、 自分の位置づけを即座に推定します。
@@ -484,7 +484,7 @@ const App = () => {
         <section className="panel">
           <h2>1. データセット概要</h2>
           <p className="description">
-            学校提供のデータを「今学期」と「累計」で切り替えて分析できます。
+            学校提供のデータを「今学期*」年度と「累計」で切り替えて分析できます。
           </p>
           <div
             className="dataset-toggle"
@@ -646,7 +646,9 @@ const App = () => {
         </section>
       </main>
 
-      <footer className="footer"></footer>
+      <footer className="footer">
+        <p>*2025年度</p>
+      </footer>
     </div>
   );
 };
