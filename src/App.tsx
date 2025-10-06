@@ -303,15 +303,16 @@ const App = () => {
     return findSegment(segments, selectedMajor, gradeNumber);
   }, [segments, selectedGrade, selectedMajor]);
 
-  const majorAggregate = useMemo(() => {
-    if (!selectedMajor) {
+  const gradeAggregate = useMemo(() => {
+    const gradeNumber = Number.parseInt(selectedGrade, 10);
+    if (Number.isNaN(gradeNumber)) {
       return { counts: Array.from({ length: bins.length }, () => 0), total: 0 };
     }
-    const majorSegments = segments.filter(
-      (segment) => segment.major === selectedMajor
+    const gradeSegments = segments.filter(
+      (segment) => segment.grade === gradeNumber
     );
-    return aggregateSegments(majorSegments, bins.length);
-  }, [bins.length, segments, selectedMajor]);
+    return aggregateSegments(gradeSegments, bins.length);
+  }, [bins.length, segments, selectedGrade]);
 
   const overallAggregate = useMemo(
     () => aggregateSegments(segments, bins.length),
@@ -326,33 +327,73 @@ const App = () => {
     [bins, selectedSegment, userGpa]
   );
 
+  const highlightBinIndex = useMemo(() => {
+    if (!hasValidGpa || bins.length === 0) {
+      return null;
+    }
+
+    const minBound = bins[0].min;
+    const maxBound = bins[bins.length - 1].max;
+    const clampedGpa = Math.min(Math.max(userGpa, minBound), maxBound);
+
+    let index = bins.findIndex((bin, binIndex) => {
+      const upper = binIndex === bins.length - 1 ? bin.max : bin.max + 0.0001;
+      return clampedGpa >= bin.min && clampedGpa <= upper;
+    });
+
+    if (index === -1) {
+      index = bins.length - 1;
+    }
+
+    return index;
+  }, [bins, hasValidGpa, userGpa]);
+
   const gradeAverage = useMemo(
+    () => weightedAverage(gradeAggregate.counts, bins),
+    [bins, gradeAggregate]
+  );
+
+  const segmentAverage = useMemo(
     () =>
       selectedSegment ? weightedAverage(selectedSegment.counts, bins) : null,
     [bins, selectedSegment]
   );
 
-  const majorAverage = useMemo(
-    () => weightedAverage(majorAggregate.counts, bins),
-    [bins, majorAggregate]
-  );
-
-  const overallAverage = useMemo(
-    () => weightedAverage(overallAggregate.counts, bins),
-    [bins, overallAggregate]
-  );
-
   const chartData = useMemo<ChartData<"bar", number[], string> | null>(() => {
-    const counts = selectedSegment?.counts ?? majorAggregate.counts;
+    const counts: number[] = selectedSegment?.counts ?? gradeAggregate.counts;
     if (!counts || counts.every((value) => value === 0)) {
       return null;
     }
 
+    const gradeNumber = Number.parseInt(selectedGrade, 10);
+    const gradeLabel = Number.isNaN(gradeNumber) ? "" : `${gradeNumber}回生`;
     const datasetLabel = selectedSegment
       ? `${selectedSegment.major} ${selectedSegment.grade}回生`
-      : selectedMajor
-      ? `${selectedMajor}（全学年）`
+      : gradeLabel
+      ? `${gradeLabel} 全体`
       : "分布";
+
+    const baseColor = "rgba(99, 102, 241, 0.75)";
+    const baseHoverColor = "rgba(79, 70, 229, 0.85)";
+    const baseBorderColor = "rgba(67, 56, 202, 1)";
+    const accentColor = "rgba(239, 68, 68, 0.85)";
+    const accentHoverColor = "rgba(220, 38, 38, 0.9)";
+    const accentBorderColor = "rgba(185, 28, 28, 1)";
+
+    const highlightIndex = highlightBinIndex ?? -1;
+
+    const backgroundColors = counts.map((_, index) =>
+      index === highlightIndex ? accentColor : baseColor
+    );
+    const hoverBackgroundColors = counts.map((_, index) =>
+      index === highlightIndex ? accentHoverColor : baseHoverColor
+    );
+    const borderColors = counts.map((_, index) =>
+      index === highlightIndex ? accentBorderColor : baseBorderColor
+    );
+    const borderWidths = counts.map((_, index) =>
+      index === highlightIndex ? 2 : 0
+    );
 
     return {
       labels: bins.map((bin) => bin.label),
@@ -360,12 +401,15 @@ const App = () => {
         {
           label: `${datasetLabel} の人数`,
           data: counts,
-          backgroundColor: "rgba(99, 102, 241, 0.75)",
+          backgroundColor: backgroundColors,
+          hoverBackgroundColor: hoverBackgroundColors,
+          borderColor: borderColors,
+          borderWidth: borderWidths,
           borderRadius: 8,
         },
       ],
     };
-  }, [bins, majorAggregate, selectedMajor, selectedSegment]);
+  }, [bins, gradeAggregate, highlightBinIndex, selectedGrade, selectedSegment]);
 
   const chartOptions = useMemo<ChartOptions<"bar">>(
     () => ({
@@ -406,7 +450,8 @@ const App = () => {
 
   const totalSegments = segments.length;
   const totalStudents = overallAggregate.total;
-  const totalCount = selectedSegment?.total ?? 0;
+  const gradeTotal = gradeAggregate.total;
+  const segmentTotal = selectedSegment?.total ?? 0;
   const gpaMin = bins[0]?.min ?? 0;
   const gpaMax = bins[bins.length - 1]?.max ?? 5;
   const estimatedRank = rankInfo.rank ? Math.round(rankInfo.rank) : null;
@@ -419,16 +464,15 @@ const App = () => {
       <header className="header">
         <div>
           <p className="eyebrow">学内データ活用</p>
-          <h1>GPA Insights Dashboard</h1>
+          <h1>GPA</h1>
           <p className="lead">
-            学校から提供された固定 CSV をもとに、学科×学年ごとの GPA
+            学校から提供されたデータをもとに、学科×学年ごとの GPA
             分布を可視化し、 自分の位置づけを即座に推定します。
           </p>
         </div>
         <div className="dataset-info">
           <span className="dataset-label">データソース</span>
           <strong>{activeOption?.label ?? "データ未選択"}</strong>
-          <span className="dataset-path">{activeOption?.filePath ?? "-"}</span>
           <span>
             {formatCount(totalSegments)} セグメント /{" "}
             {formatCount(totalStudents)} 名
@@ -440,9 +484,7 @@ const App = () => {
         <section className="panel">
           <h2>1. データセット概要</h2>
           <p className="description">
-            学校提供の CSV を「今学期」と「累計」で切り替えて分析できます。
-            必要に応じて <code>src/data</code> フォルダ内の CSV
-            を差し替えてください。
+            学校提供のデータを「今学期」と「累計」で切り替えて分析できます。
           </p>
           <div
             className="dataset-toggle"
@@ -461,14 +503,10 @@ const App = () => {
                   onClick={() => setDatasetKey(option.key)}
                 >
                   <span className="dataset-toggle__label">{option.label}</span>
-                  <span className="dataset-toggle__path">
-                    {option.filePath.replace("src/data/", "data/")}
-                  </span>
                 </button>
               );
             })}
           </div>
-          <p className="hint">CSV ファイルはリポジトリ内で管理されます。</p>
           <ul className="dataset-metrics">
             <li>
               <span>登録セグメント</span>
@@ -542,7 +580,7 @@ const App = () => {
           <div className="stats-grid">
             <article className="stat-card">
               <p className="stat-label">対象人数</p>
-              <p className="stat-value">{formatCount(totalCount)} 名</p>
+              <p className="stat-value">{formatCount(segmentTotal)} 名</p>
               <p className="stat-detail">
                 {selectedSegment
                   ? `${selectedSegment.major} ${selectedSegment.grade}回生（${
@@ -554,17 +592,22 @@ const App = () => {
             <article className="stat-card">
               <p className="stat-label">平均 GPA（学年）</p>
               <p className="stat-value">{formatDecimal(gradeAverage)}</p>
-              <p className="stat-detail">選択したセグメントの加重平均</p>
+              <p className="stat-detail">
+                {selectedGrade
+                  ? `理工学部 ${selectedGrade}回生（${formatCount(
+                      gradeTotal
+                    )} 名対象）`
+                  : "学年を選択してください"}
+              </p>
             </article>
             <article className="stat-card">
-              <p className="stat-label">平均 GPA（学科）</p>
-              <p className="stat-value">{formatDecimal(majorAverage)}</p>
-              <p className="stat-detail">同学科の全学年を対象</p>
-            </article>
-            <article className="stat-card">
-              <p className="stat-label">平均 GPA（全体）</p>
-              <p className="stat-value">{formatDecimal(overallAverage)}</p>
-              <p className="stat-detail">CSV に含まれる全学生</p>
+              <p className="stat-label">平均 GPA（学科×学年）</p>
+              <p className="stat-value">{formatDecimal(segmentAverage)}</p>
+              <p className="stat-detail">
+                {selectedSegment
+                  ? `${selectedSegment.major} ${selectedSegment.grade}回生の加重平均`
+                  : "学科・学年を選択してください"}
+              </p>
             </article>
           </div>
 
@@ -574,7 +617,7 @@ const App = () => {
               <p>
                 {selectedSegment && hasValidGpa
                   ? estimatedRank && estimatedPercentile !== null
-                    ? `${formatCount(totalCount)} 名中 推定 ${formatCount(
+                    ? `${formatCount(segmentTotal)} 名中 推定 ${formatCount(
                         estimatedRank
                       )} 位（${
                         activeOption?.label ?? "対象"
@@ -603,12 +646,7 @@ const App = () => {
         </section>
       </main>
 
-      <footer className="footer">
-        <p>
-          CSV の構造を変更する場合は <code>src/data/sample-students.csv</code>{" "}
-          を基準に列（学科・学年 / GPA レンジ）を編集してください。
-        </p>
-      </footer>
+      <footer className="footer"></footer>
     </div>
   );
 };
