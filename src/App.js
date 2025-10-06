@@ -13,12 +13,12 @@ import currentTermCsv from "./data/sample-students.csv?raw";
 import cumulativeCsv from "./data/cumulative-students.csv?raw";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 const EMPTY_DATASET = { bins: [], segments: [] };
-const numberFormatter = (fraction = 1) =>
+const numberFormatter = (fraction = 2) =>
   new Intl.NumberFormat("ja-JP", {
     minimumFractionDigits: fraction,
     maximumFractionDigits: fraction,
   });
-const formatDecimal = (value, fraction = 1) =>
+const formatDecimal = (value, fraction = 2) =>
   value === null ? "-" : numberFormatter(fraction).format(value);
 const formatCount = (value) => value.toLocaleString("ja-JP");
 const sumCounts = (counts) => counts.reduce((sum, value) => sum + value, 0);
@@ -385,11 +385,11 @@ const App = () => {
                 className: "eyebrow",
                 children: "\u5B66\u5185\u30C7\u30FC\u30BF\u6D3B\u7528",
               }),
-              _jsx("h1", { children: "GPA Insights Dashboard" }),
+              _jsx("h1", { children: "\u307F\u3093\u306A\u306EGPA" }),
               _jsx("p", {
                 className: "lead",
                 children:
-                  "\u5B66\u6821\u304B\u3089\u63D0\u4F9B\u3055\u308C\u305F\u56FA\u5B9A CSV \u3092\u3082\u3068\u306B\u3001\u5B66\u79D1\u00D7\u5B66\u5E74\u3054\u3068\u306E GPA \u5206\u5E03\u3092\u53EF\u8996\u5316\u3057\u3001 \u81EA\u5206\u306E\u4F4D\u7F6E\u3065\u3051\u3092\u5373\u5EA7\u306B\u63A8\u5B9A\u3057\u307E\u3059\u3002",
+                  "\u5B66\u6821\u304B\u3089\u63D0\u4F9B\u3055\u308C\u305F\u30C7\u30FC\u30BF\u3092\u3082\u3068\u306B\u3001\u5B66\u79D1\u00D7\u5B66\u5E74\u3054\u3068\u306E GPA \u5206\u5E03\u3092\u53EF\u8996\u5316\u3057\u3001 \u81EA\u5206\u306E\u4F4D\u7F6E\u3065\u3051\u3092\u5373\u5EA7\u306B\u63A8\u5B9A\u3057\u307E\u3059\u3002",
               }),
             ],
           }),
@@ -402,10 +402,6 @@ const App = () => {
               }),
               _jsx("strong", {
                 children: activeOption?.label ?? "データ未選択",
-              }),
-              _jsx("span", {
-                className: "dataset-path",
-                children: activeOption?.filePath ?? "-",
               }),
               _jsxs("span", {
                 children: [
@@ -429,13 +425,10 @@ const App = () => {
               _jsx("h2", {
                 children: "1. \u30C7\u30FC\u30BF\u30BB\u30C3\u30C8\u6982\u8981",
               }),
-              _jsxs("p", {
+              _jsx("p", {
                 className: "description",
-                children: [
-                  "\u5B66\u6821\u63D0\u4F9B\u306E CSV \u3092\u300C\u4ECA\u5B66\u671F\u300D\u3068\u300C\u7D2F\u8A08\u300D\u3067\u5207\u308A\u66FF\u3048\u3066\u5206\u6790\u3067\u304D\u307E\u3059\u3002 \u5FC5\u8981\u306B\u5FDC\u3058\u3066 ",
-                  _jsx("code", { children: "src/data" }),
-                  " \u30D5\u30A9\u30EB\u30C0\u5185\u306E CSV \u3092\u5DEE\u3057\u66FF\u3048\u3066\u304F\u3060\u3055\u3044\u3002",
-                ],
+                children:
+                  "\u5B66\u6821\u63D0\u4F9B\u306E\u30C7\u30FC\u30BF\u3092\u300C\u4ECA\u5B66\u671F*\u300D\u5E74\u5EA6\u3068\u300C\u7D2F\u8A08\u300D\u3067\u5207\u308A\u66FF\u3048\u3066\u5206\u6790\u3067\u304D\u307E\u3059\u3002",
               }),
               _jsx("div", {
                 className: "dataset-toggle",
@@ -444,7 +437,7 @@ const App = () => {
                   "\u30C7\u30FC\u30BF\u30BB\u30C3\u30C8\u9078\u629E",
                 children: datasetOptions.map((option) => {
                   const isActive = option.key === datasetKey;
-                  return _jsxs(
+                  return _jsx(
                     "button",
                     {
                       type: "button",
@@ -452,28 +445,14 @@ const App = () => {
                         isActive ? " is-active" : ""
                       }`,
                       onClick: () => setDatasetKey(option.key),
-                      children: [
-                        _jsx("span", {
-                          className: "dataset-toggle__label",
-                          children: option.label,
-                        }),
-                        _jsx("span", {
-                          className: "dataset-toggle__path",
-                          children: option.filePath.replace(
-                            "src/data/",
-                            "data/"
-                          ),
-                        }),
-                      ],
+                      children: _jsx("span", {
+                        className: "dataset-toggle__label",
+                        children: option.label,
+                      }),
                     },
                     option.key
                   );
                 }),
-              }),
-              _jsx("p", {
-                className: "hint",
-                children:
-                  "CSV \u30D5\u30A1\u30A4\u30EB\u306F\u30EA\u30DD\u30B8\u30C8\u30EA\u5185\u3067\u7BA1\u7406\u3055\u308C\u307E\u3059\u3002",
               }),
               _jsxs("ul", {
                 className: "dataset-metrics",
@@ -716,14 +695,7 @@ const App = () => {
       }),
       _jsx("footer", {
         className: "footer",
-        children: _jsxs("p", {
-          children: [
-            "CSV \u306E\u69CB\u9020\u3092\u5909\u66F4\u3059\u308B\u5834\u5408\u306F ",
-            _jsx("code", { children: "src/data/sample-students.csv" }),
-            " ",
-            "\u3092\u57FA\u6E96\u306B\u5217\uFF08\u5B66\u79D1\u30FB\u5B66\u5E74 / GPA \u30EC\u30F3\u30B8\uFF09\u3092\u7DE8\u96C6\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
-          ],
-        }),
+        children: _jsx("p", { children: "*2025\u5E74\u5EA6" }),
       }),
     ],
   });

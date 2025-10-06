@@ -21,13 +21,13 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const EMPTY_DATASET: DistributionDataset = { bins: [], segments: [] };
 
-const numberFormatter = (fraction = 1) =>
+const numberFormatter = (fraction = 2) =>
   new Intl.NumberFormat("ja-JP", {
     minimumFractionDigits: fraction,
     maximumFractionDigits: fraction,
   });
 
-const formatDecimal = (value: number | null, fraction = 1) =>
+const formatDecimal = (value: number | null, fraction = 2) =>
   value === null ? "-" : numberFormatter(fraction).format(value);
 
 const formatCount = (value: number) => value.toLocaleString("ja-JP");
